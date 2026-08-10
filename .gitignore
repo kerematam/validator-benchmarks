@@ -1,0 +1,14 @@
+node_modules/
+.generated/
+dist/
+coverage/
+tmp/
+.DS_Store
+*.prof
+
+# Local-only handoff with absolute source-repository paths.
+AGENTS.md
+
+# Raw result sets are added deliberately after privacy review.
+results/*
+!results/.gitkeep

@@ -1,0 +1,6 @@
+.git
+.generated
+dist
+node_modules
+results
+tmp
