@@ -1,0 +1,9 @@
+{
+  "control": {
+    "label": "synthetic-control-entry"
+  },
+  "__proto__": {
+    "label": "injected-prototype-label",
+    "isAdmin": true
+  }
+}

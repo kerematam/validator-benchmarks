@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "header": {},
+      "businessObject": {
+        "name": "Synthetic Object"
+      },
+      "table": {
+        "columns": [
+          {
+            "key": "synthetic_column_01"
+          }
+        ],
+        "rows": [
+          {
+            "__proto__": [
+              {
+                "label": "Synthetic Prototype Probe Cell",
+                "value": "SYNTHETIC-PROTOTYPE-PROBE-VALUE",
+                "isAdmin": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

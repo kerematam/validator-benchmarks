@@ -13,6 +13,7 @@
     "benchmark:docker-memory": "bun run src/benchmark/docker-memory-coordinator.ts",
     "build:compiled": "bun run src/build/build-compiled-zod.ts",
     "build:compiled:manual-normalizer": "bun run src/build/build-compiled-zod-manual-normalizer.ts",
+    "build:compiled:simple": "bun run src/build/build-compiled-zod-simple.ts",
     "build:compiled:bundled": "bun run src/build/check-bundled-compatibility.ts",
     "generate": "bun run src/generator/cli.ts",
     "server": "bun run src/http/server.ts",
