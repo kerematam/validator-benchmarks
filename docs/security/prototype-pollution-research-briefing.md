@@ -1,6 +1,7 @@
 # Research Briefing: Prototype Pollution in Validation-Library Pipelines
 
 Date: August 10, 2026
+Reverified: August 16, 2026
 Audience: research agent performing a deep search on prototype pollution
 terminology, prior art, tooling behavior, and mitigation guidance.
 Status of this document: briefing only. Every behavioral claim listed here was
@@ -14,7 +15,7 @@ comparing validation libraries on a structured-report batch request contract.
 
 Pinned versions:
 
-- Zod 4.3.6 (interpreted, "current-zod")
+- Zod 4.4.3 (interpreted, "current-zod")
 - zod-compiler 1.23.6 with its Bun build plugin ("compiled-zod")
 - Ajv 8.18.0
 - TypeBox 1.3.11 (plus a native-transform variant)
@@ -55,10 +56,12 @@ Fixtures and tests:
 
 ### Experiment A — `__proto__` as a valid cell array, full HTTP pipeline
 
-Payload passes Ajv, TypeBox, and Valibot schemas. The shared manual
-normalizer's assignment then fires the legacy `Object.prototype.__proto__`
-setter: the normalized row's `[[Prototype]]` is replaced by the
-attacker-controlled cell array. Verified on the normalized row:
+The payload passes the Ajv, TypeBox, and Valibot schemas because the benchmark
+contract deliberately accepts arbitrary string row keys. Acceptance does not
+itself change an object's prototype. The shared manual normalizer's later
+assignment fires the legacy `Object.prototype.__proto__` setter: the
+normalized row's `[[Prototype]]` is replaced by the attacker-controlled cell
+array. Verified on the normalized row:
 
 - `row instanceof Array === true`
 - inherited `row.length === 1`
@@ -79,9 +82,10 @@ only by dropping the key. No variant produced `row.isAdmin === true`.
 
 ### Experiment C — `isAdmin: true` inside a schema-valid cell
 
-Passes every schema (cells tolerate unknown properties). Pollution still fires
-in the normalizer, but the normalizer rebuilds cells keeping only
-`label`/`value`, so the marker is stripped before the unsafe assignment:
+Passes every schema (cells tolerate unknown properties). Row-local prototype
+injection still occurs in the affected shared-normalizer adapters, but the
+normalizer rebuilds cells keeping only `label`/`value`, so the marker is
+stripped before the unsafe assignment:
 
 - `row.isAdmin === true` → false (injected prototype is an Array)
 - `row[0].isAdmin === true` → false (stripped by cell normalization)
@@ -137,7 +141,9 @@ Given `const src = JSON.parse('{"__proto__":{"isAdmin":true}}')`:
 Current repo wording treats the pieces separately:
 
 - **Source**: schema-validated, attacker-controlled `__proto__` key retained
-  as an own data property (Experiment D "kept" outputs).
+  as an inert own data property by the specific Experiment D "kept" outputs
+  (Compiled Zod, Ajv, and TypeBox). Current Zod and Valibot drop it in that
+  schema-only experiment.
 - **Gadget**: code patterns that convert the inert key into pollution
   (assignment copy loops, `Object.assign`, deep merges, path setters).
 - **Sink**: the exact dangerous statement (`target[key] = value` /
@@ -154,13 +160,16 @@ understood: **latent/dormant prototype pollution**;
 far: **CWE-1321** (prototype pollution) and **CWE-915** (modification of
 dynamically-determined object attributes, mass-assignment-flavored enabler).
 
-Repo's current one-sentence formulation:
+Repo's current formulation:
 
-> The validators' outputs carry a latent (second-order) prototype-pollution
-> payload: a validated, attacker-controlled `__proto__` own property that is
-> inert on the object itself but activates at any downstream assignment-based
-> copy or merge gadget (CWE-1321, enabled by CWE-915-style arbitrary-key
-> acceptance).
+> In the loose schema-only probe, Ajv and TypeBox return the parsed input and
+> Compiled Zod preserves `__proto__` as an inert own data property. That safe
+> property does not alter the prototype by itself. In the benchmark's Ajv,
+> TypeBox, and Valibot manual-normalizer adapters, the accepted key later
+> reaches an unsafe `target[key] = value` assignment and produces row-local
+> prototype injection. This is an integration vulnerability, not evidence that
+> those validation libraries are independently vulnerable. Compiled Zod's
+> strict-record parser divergence is a separate validator-level finding.
 
 ## 4. Research questions for the deep search
 

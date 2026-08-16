@@ -1,7 +1,8 @@
-# `__proto__` Security Behavior by Validation Library
+# `__proto__` Security Behavior Across Validation Pipelines
 
-Date: August 10, 2026  
-Status: Confirmed local behavior; known vulnerability retained for benchmarking  
+Date: August 10, 2026
+Reverified: August 16, 2026
+Status: Confirmed local integration behavior; vulnerable shared normalizer retained for benchmarking
 Scope: Structured-report row keys in this repository's Bun validation adapters
 
 ## Executive answer
@@ -38,10 +39,10 @@ property.
 | Zod compiler | Compiled Zod | Yes | Preserved as an own data property | No prototype injection observed |
 | Zod | Zod manual normalizer | Yes | `__proto__` is dropped before unsafe assignment | No prototype injection; silent data loss |
 | Zod compiler | Compiled Zod manual normalizer | Yes | `__proto__` is dropped before unsafe assignment | No prototype injection; silent data loss |
-| Ajv | Ajv | Yes | Cell array becomes the row prototype | **Affected: row-local prototype injection** |
-| TypeBox | TypeBox | Yes | Cell array becomes the row prototype | **Affected: row-local prototype injection** |
+| Ajv | Ajv + shared manual normalizer | Yes | Cell array becomes the row prototype | **Affected integration: row-local prototype injection** |
+| TypeBox | TypeBox + shared manual normalizer | Yes | Cell array becomes the row prototype | **Affected integration: row-local prototype injection** |
 | TypeBox | TypeBox native transform | Yes | `__proto__` is dropped | No prototype injection; silent data loss |
-| Valibot | Valibot | Yes | Cell array becomes the row prototype | **Affected: row-local prototype injection** |
+| Valibot | Valibot + shared manual normalizer | Yes | Cell array becomes the row prototype | **Affected integration: row-local prototype injection** |
 | Valibot | Valibot native transform | Yes | `__proto__` is dropped | No prototype injection; silent data loss |
 | No validation | None | Yes | Preserved as an own data property from JSON parsing | No prototype injection observed; not a usable validator |
 
@@ -164,7 +165,7 @@ the normalized row for those three variants:
 
 - `row instanceof Array` is `true` and inherited `row.length` is `1`: the
   row's prototype really was replaced by the attacker-controlled cell array.
-  **Row-local prototype pollution is confirmed with a fully schema-valid,
+  **Row-local prototype injection is confirmed with a fully schema-valid,
   externally supplied request body.**
 - `row[0]` inherits the injected cell, including its normalized `label`.
 - `row.isAdmin === true` is **`false`**: the injected prototype is an `Array`,
@@ -216,10 +217,13 @@ prototype was replaced, and global `Object.prototype` remained unchanged. The
 notable divergence is only whether the key is dropped (Current Zod, Valibot) or
 kept as an inert own data property (Compiled Zod, Ajv, TypeBox).
 
-This confirms the layering claim made above: the validation libraries
-themselves do not perform the unsafe assignment. Row-local injection in the
-benchmark requires the shared manual normalizer's `normalizedRow[key] = value`
-statement; schema validation alone cannot trigger it.
+This confirms the layering claim for the loose-entry experiment: Ajv, TypeBox,
+Current Zod, Valibot, and the loose compiled-Zod path do not perform the unsafe
+assignment in this case. Row-local injection in the corresponding benchmark
+adapters requires the shared manual normalizer's
+`normalizedRow[key] = value` statement; schema validation alone does not
+trigger it in this experiment. The strict compiled-Zod exception is documented
+separately below.
 
 ### Non-loose entry schemas: the compiled-Zod exception
 

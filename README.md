@@ -110,9 +110,14 @@ validation, decoding/transformation, and normalized-output checks they perform.
 This is intentionally a realistic implementation comparison rather than a
 requirement that every engine execute mechanically identical stages. Native
 diagnostics and unusual JavaScript object-key behavior can differ even when
-ordinary acceptance and normalized results agree. In particular, unsafe
-dynamic row keys such as `__proto__` remain accepted for now; the correctness
-suite records acceptance without claiming identical normalized object state.
+ordinary acceptance and normalized results agree. In particular, the contract
+still permits dynamic row keys such as `__proto__`. Acceptance alone is not a
+prototype mutation; the documented row-local injection occurs only in
+adapters that pass the key to this repository's unsafe shared manual
+normalizer. See
+[`docs/security/prototype-key-validation-library-review.md`](./docs/security/prototype-key-validation-library-review.md)
+for the validator-versus-integration distinction and the separate compiled-Zod
+strict-record finding.
 
 ## Synthetic profiles
 
