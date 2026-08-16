@@ -105,7 +105,7 @@ export const BenchmarkRunSchema = z.strictObject({
     bunVersion: z.literal("1.3.14"),
     versions: z.strictObject({
       hono: z.literal("4.12.11"),
-      zod: z.literal("4.3.6"),
+      zod: z.literal("4.4.3"),
       zodCompiler: z.literal("1.23.6"),
       ajv: z.literal("8.18.0"),
       typebox: z.literal("1.3.11"),

@@ -1,0 +1,142 @@
+{
+  "status": "pass",
+  "packages": "external",
+  "artifact": "dist/compiled-zod-external/compiled-zod-entry.js",
+  "artifactBytes": 99291,
+  "buildMilliseconds": 59.662833000000006,
+  "optimizedSchemas": [
+    "DiagnosticStructuredReportRequestSchema",
+    "StructuredReportBusinessObjectSchema",
+    "StructuredReportCellSchema",
+    "StructuredReportColumnSchema",
+    "StructuredReportHeaderSchema",
+    "StructuredReportRequestSchema",
+    "StructuredReportRowSchema",
+    "StructuredReportSchema",
+    "StructuredReportTableSchema"
+  ],
+  "diagnostics": [
+    {
+      "file": "src/contract/zod-schema.ts",
+      "schemas": [
+        {
+          "exportName": "DiagnosticStructuredReportRequestSchema",
+          "coverage": {
+            "total": 59,
+            "compilable": 59,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportBusinessObjectSchema",
+          "coverage": {
+            "total": 20,
+            "compilable": 20,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportCellSchema",
+          "coverage": {
+            "total": 12,
+            "compilable": 12,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportColumnSchema",
+          "coverage": {
+            "total": 7,
+            "compilable": 7,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportHeaderSchema",
+          "coverage": {
+            "total": 18,
+            "compilable": 18,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportRequestSchema",
+          "coverage": {
+            "total": 59,
+            "compilable": 59,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportRowSchema",
+          "coverage": {
+            "total": 13,
+            "compilable": 13,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportSchema",
+          "coverage": {
+            "total": 59,
+            "compilable": 59,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "StructuredReportTableSchema",
+          "coverage": {
+            "total": 20,
+            "compilable": 20,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": false,
+            "blocker": "effect"
+          },
+          "fallbacks": []
+        }
+      ]
+    }
+  ]
+}

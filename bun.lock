@@ -9,7 +9,7 @@
         "hono": "4.12.11",
         "typebox": "1.3.11",
         "valibot": "1.4.2",
-        "zod": "4.3.6",
+        "zod": "4.4.3",
       },
       "devDependencies": {
         "@types/bun": "1.3.14",
@@ -71,7 +71,7 @@
 
     "webpack-virtual-modules": ["webpack-virtual-modules@0.6.2", "", {}, "sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ=="],
 
-    "zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
+    "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "zod-compiler": ["zod-compiler@1.23.6", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "acorn": "^8.16.0", "get-tsconfig": "^4.14.0", "jiti": "^2.7.0", "magic-string": "^0.30.21", "picomatch": "^4.0.4", "unplugin": "^3.0.0" }, "peerDependencies": { "@rsbuild/core": "^1.0.0 || ^2.0.0", "@swc/core": ">=1.3.0", "zod": "^4.0.0" }, "optionalPeers": ["@rsbuild/core", "@swc/core"], "bin": { "zod-compiler": "dist/cli/index.js" } }, "sha512-0UOJUvzsYzJ9XQnJrSQMShcKDN+W8AhMoxpD4tvkgkEnNVlyRt2sI0ZE8AEi7M7I/NyzSyc8eKr0jJVgkRHEcw=="],
   }

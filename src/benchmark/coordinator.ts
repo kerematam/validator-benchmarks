@@ -411,7 +411,7 @@ const run = BenchmarkRunSchema.parse({
     bunVersion: Bun.version,
     versions: {
       hono: "4.12.11",
-      zod: "4.3.6",
+      zod: "4.4.3",
       zodCompiler: "1.23.6",
       ajv: "8.18.0",
       typebox: "1.3.11",

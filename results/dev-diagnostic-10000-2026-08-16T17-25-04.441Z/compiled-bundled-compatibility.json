@@ -1,0 +1,8 @@
+{
+  "status": "pass",
+  "packages": "bundle",
+  "artifact": "dist/compiled-zod-bundled/compiled-zod-entry.js",
+  "artifactBytes": 286040,
+  "runtimeCompatible": false,
+  "probeExitCode": 1
+}

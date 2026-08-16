@@ -1,0 +1,44 @@
+{
+  "status": "pass",
+  "experiment": "raw-manual-normalizer",
+  "packages": "external",
+  "fastPathEligible": true,
+  "artifact": "dist/compiled-zod-manual-normalizer/compiled-zod-manual-normalizer-entry.js",
+  "artifactBytes": 71368,
+  "buildMilliseconds": 32.34500000000001,
+  "optimizedSchemas": [
+    "DiagnosticManualNormalizerStructuredReportRequestSchema",
+    "ManualNormalizerStructuredReportRequestSchema"
+  ],
+  "diagnostics": [
+    {
+      "file": "src/contract/zod-manual-normalizer-schema.ts",
+      "schemas": [
+        {
+          "exportName": "DiagnosticManualNormalizerStructuredReportRequestSchema",
+          "coverage": {
+            "total": 48,
+            "compilable": 48,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": true
+          },
+          "fallbacks": []
+        },
+        {
+          "exportName": "ManualNormalizerStructuredReportRequestSchema",
+          "coverage": {
+            "total": 48,
+            "compilable": 48,
+            "percent": 100
+          },
+          "fastPath": {
+            "eligible": true
+          },
+          "fallbacks": []
+        }
+      ]
+    }
+  ]
+}
