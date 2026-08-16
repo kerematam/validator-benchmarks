@@ -15,6 +15,7 @@
     "build:compiled:manual-normalizer": "bun run src/build/build-compiled-zod-manual-normalizer.ts",
     "build:compiled:simple": "bun run src/build/build-compiled-zod-simple.ts",
     "build:compiled:bundled": "bun run src/build/check-bundled-compatibility.ts",
+    "build:compiler-review": "bun run src/examples/compiler-review/build.ts",
     "generate": "bun run src/generator/cli.ts",
     "server": "bun run src/http/server.ts",
     "summarize": "bun run src/benchmark/summarize.ts",
