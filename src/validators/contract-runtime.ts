@@ -199,6 +199,7 @@ function normalizeTable(
   source: Record<string, unknown>,
   path: readonly NormalizedIssuePathSegment[],
   issues: NormalizedIssue[],
+  dropPrototypeKeys: boolean,
 ): Record<string, unknown> {
   const columns = source.columns;
   const rows = source.rows;
@@ -224,6 +225,9 @@ function normalizeTable(
 
       const normalizedRow: Record<string, unknown> = {};
       for (const [key, cells] of Object.entries(row)) {
+        if (dropPrototypeKeys && key === "__proto__") {
+          continue;
+        }
         if (!Array.isArray(cells)) {
           throw new Error("Validator accepted an invalid cell collection");
         }
@@ -247,6 +251,7 @@ function normalizeReport(
   source: Record<string, unknown>,
   path: readonly NormalizedIssuePathSegment[],
   issues: NormalizedIssue[],
+  dropPrototypeKeys: boolean,
 ): Record<string, unknown> {
   const header = pickNullish(source, ["header", "Header"]);
   const businessObject = pickNullish(source, [
@@ -265,7 +270,12 @@ function normalizeReport(
       [...path, "businessObject"],
       issues,
     ),
-    table: normalizeTable(table, [...path, "table"], issues),
+    table: normalizeTable(
+      table,
+      [...path, "table"],
+      issues,
+      dropPrototypeKeys,
+    ),
   };
   const templateName = source.templateName;
   normalized.templateName =
@@ -307,9 +317,24 @@ export interface NormalizationResult {
   readonly issues: readonly NormalizedIssue[];
 }
 
-export function normalizeRequestInPlace(input: unknown): NormalizationResult {
+export interface NormalizationOptions {
+  readonly dropPrototypeKeys?: boolean;
+}
+
+export function normalizeRequestInPlace(
+  input: unknown,
+  options: NormalizationOptions = {},
+): NormalizationResult {
   if (!isRecord(input) || !Array.isArray(input.data)) {
     throw new Error("Validator normalization received an invalid request");
+  }
+
+  if (
+    options.dropPrototypeKeys === true &&
+    Object.hasOwn(input, "__proto__") &&
+    !Reflect.deleteProperty(input, "__proto__")
+  ) {
+    throw new Error("Unable to remove a prototype key from validated input");
   }
 
   const issues: NormalizedIssue[] = [];
@@ -318,7 +343,12 @@ export function normalizeRequestInPlace(input: unknown): NormalizationResult {
     if (!isRecord(report)) {
       throw new Error("Validator accepted an invalid report");
     }
-    input.data[index] = normalizeReport(report, ["data", index], issues);
+    input.data[index] = normalizeReport(
+      report,
+      ["data", index],
+      issues,
+      options.dropPrototypeKeys === true,
+    );
   }
 
   return { data: input, issues };

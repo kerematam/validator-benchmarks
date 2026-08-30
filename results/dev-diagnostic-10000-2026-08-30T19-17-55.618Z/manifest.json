@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "generator": "deterministic-synthetic-v1",
+  "profile": "diagnostic-10000",
+  "validationEnvelope": "diagnostic",
+  "maximumReports": 10000,
+  "seed": 20260807,
+  "reportCount": 10000,
+  "columns": {
+    "total": 45000,
+    "minimumPerReport": 3,
+    "maximumPerReport": 6
+  },
+  "rows": {
+    "total": 35000,
+    "minimumPerReport": 2,
+    "maximumPerReport": 5
+  },
+  "cells": {
+    "total": 170000,
+    "minimumPerReport": 6,
+    "maximumPerReport": 30
+  },
+  "jsonStructure": {
+    "objects": 290001,
+    "arrays": 55001,
+    "scalars": 941334
+  },
+  "encodedBytes": 49149405,
+  "sha256": "568ae451e49fb981cc8ea5ca1f58e771d2863b3f4db7639581af9f699df61f7a"
+}

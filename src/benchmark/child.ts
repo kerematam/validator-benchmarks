@@ -285,7 +285,7 @@ if (!argumentsResult.success) {
 const inputText = await Bun.file(argumentsResult.data.input).text();
 const profile = getSyntheticProfile(argumentsResult.data.profile);
 const base: SampleBase = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   development: true,
   mode: argumentsResult.data.mode,
   variant: argumentsResult.data.variant,

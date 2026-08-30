@@ -1,11 +1,12 @@
-import { beforeAll, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import Ajv from "ajv";
 import Type from "typebox";
 import Schema from "typebox/schema";
 import * as v from "valibot";
+import { z } from "zod";
+import { z as z44 } from "zod-4-4";
 import {
   SimpleRecordSchema,
   SimpleStrictRecordSchema,
@@ -22,8 +23,9 @@ interface SchemaOnlyObservation {
 }
 
 type SchemaOnlyCaseName =
-  | "current-zod"
-  | "compiled-zod"
+  | "zod-4.4-interpreted"
+  | "zod-4.5-interpreted"
+  | "zod-4.5-compiled"
   | "ajv"
   | "typebox"
   | "valibot";
@@ -33,23 +35,12 @@ interface SchemaOnlyCase {
   readonly run: (input: unknown) => SchemaOnlyObservation;
 }
 
-interface CompiledSimpleSchema {
-  readonly is: (input: unknown) => boolean;
-  readonly safeParse: (
-    input: unknown,
-  ) => { readonly success: boolean; readonly data?: unknown };
-}
-
 const FIXTURE_PATH = resolve(
   "test/fixtures/prototype-schema-only-request.json",
 );
 const LABEL_FIXTURE_PATH = resolve(
   "test/fixtures/prototype-schema-only-label-request.json",
 );
-const COMPILED_ARTIFACT_PATH = resolve(
-  "dist/compiled-zod-simple/compiled-zod-simple-entry.js",
-);
-
 const SIMPLE_AJV_SCHEMA = {
   type: "object",
   additionalProperties: {
@@ -113,57 +104,25 @@ interface StrictEntryCase {
   readonly run: (input: unknown) => StrictEntryObservation;
 }
 
-let compiledSimpleSchema: CompiledSimpleSchema | undefined;
-let compiledSimpleStrictSchema: CompiledSimpleSchema | undefined;
+const zod44SimpleRecordSchema = z44.record(
+  z44.string(),
+  z44.looseObject({ label: z44.string().optional() }),
+);
+const zod44SimpleStrictRecordSchema = z44.record(
+  z44.string(),
+  z44.object({ label: z44.string().optional() }),
+);
+const nativeCompiledSimpleSchema = z.compile(SimpleRecordSchema, {
+  strict: true,
+});
+const nativeCompiledSimpleStrictSchema = z.compile(
+  SimpleStrictRecordSchema,
+  { strict: true },
+);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
-function isCompiledSimpleSchema(
-  value: unknown,
-): value is CompiledSimpleSchema {
-  return (
-    isRecord(value) &&
-    typeof value.safeParse === "function" &&
-    typeof value.is === "function"
-  );
-}
-
-async function runBuild(script: string): Promise<void> {
-  const build = Bun.spawn([Bun.argv[0] ?? "bun", "run", script], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [exitCode, stdout, stderr] = await Promise.all([
-    build.exited,
-    new Response(build.stdout).text(),
-    new Response(build.stderr).text(),
-  ]);
-  if (exitCode !== 0) {
-    throw new Error(`${script} failed: ${stderr.trim() || stdout.trim()}`);
-  }
-}
-
-beforeAll(async () => {
-  await runBuild("build:compiled:simple");
-  const moduleExports: unknown = await import(
-    `${pathToFileURL(COMPILED_ARTIFACT_PATH).href}?build=${Date.now()}`
-  );
-  if (!isRecord(moduleExports)) {
-    throw new Error("Compiled simple artifact did not export a module object");
-  }
-  if (!isCompiledSimpleSchema(moduleExports.SimpleRecordSchema)) {
-    throw new Error("Compiled simple artifact did not export a usable schema");
-  }
-  if (!isCompiledSimpleSchema(moduleExports.SimpleStrictRecordSchema)) {
-    throw new Error(
-      "Compiled simple artifact did not export a usable strict schema",
-    );
-  }
-  compiledSimpleSchema = moduleExports.SimpleRecordSchema;
-  compiledSimpleStrictSchema = moduleExports.SimpleStrictRecordSchema;
-});
 
 function observeOutput(
   accepted: boolean,
@@ -198,10 +157,6 @@ function observeOutput(
 }
 
 function cases(): readonly SchemaOnlyCase[] {
-  if (compiledSimpleSchema === undefined) {
-    throw new Error("Compiled simple schema was not initialized");
-  }
-  const compiled = compiledSimpleSchema;
   const ajvValidate = new Ajv({
     allErrors: true,
     allowUnionTypes: true,
@@ -211,7 +166,17 @@ function cases(): readonly SchemaOnlyCase[] {
 
   return [
     {
-      name: "current-zod",
+      name: "zod-4.4-interpreted",
+      run(input) {
+        const result = zod44SimpleRecordSchema.safeParse(input);
+        return observeOutput(
+          result.success,
+          result.success ? result.data : undefined,
+        );
+      },
+    },
+    {
+      name: "zod-4.5-interpreted",
       run(input) {
         const result = SimpleRecordSchema.safeParse(input);
         return observeOutput(
@@ -221,9 +186,9 @@ function cases(): readonly SchemaOnlyCase[] {
       },
     },
     {
-      name: "compiled-zod",
+      name: "zod-4.5-compiled",
       run(input) {
-        const result = compiled.safeParse(input);
+        const result = nativeCompiledSimpleSchema.safeParse(input);
         return observeOutput(
           result.success,
           result.success ? result.data : undefined,
@@ -274,8 +239,9 @@ const preservedOwnKeyBySchema: SchemaOnlyObservation = {
 const expectedObservations: Readonly<
   Record<SchemaOnlyCaseName, SchemaOnlyObservation>
 > = {
-  "current-zod": droppedBySchema,
-  "compiled-zod": preservedOwnKeyBySchema,
+  "zod-4.4-interpreted": droppedBySchema,
+  "zod-4.5-interpreted": droppedBySchema,
+  "zod-4.5-compiled": droppedBySchema,
   ajv: preservedOwnKeyBySchema,
   typebox: preservedOwnKeyBySchema,
   valibot: droppedBySchema,
@@ -315,10 +281,6 @@ function observeStrictOutput(
 }
 
 function strictCases(): readonly StrictEntryCase[] {
-  if (compiledSimpleStrictSchema === undefined) {
-    throw new Error("Compiled strict schema was not initialized");
-  }
-  const compiledStrict = compiledSimpleStrictSchema;
   const ajvValidate = new Ajv({
     allErrors: true,
     allowUnionTypes: true,
@@ -328,7 +290,17 @@ function strictCases(): readonly StrictEntryCase[] {
 
   return [
     {
-      name: "current-zod",
+      name: "zod-4.4-interpreted",
+      run(input) {
+        const result = zod44SimpleStrictRecordSchema.safeParse(input);
+        return observeStrictOutput(
+          result.success,
+          result.success ? result.data : undefined,
+        );
+      },
+    },
+    {
+      name: "zod-4.5-interpreted",
       run(input) {
         const result = SimpleStrictRecordSchema.safeParse(input);
         return observeStrictOutput(
@@ -338,9 +310,9 @@ function strictCases(): readonly StrictEntryCase[] {
       },
     },
     {
-      name: "compiled-zod",
+      name: "zod-4.5-compiled",
       run(input) {
-        const result = compiledStrict.safeParse(input);
+        const result = nativeCompiledSimpleStrictSchema.safeParse(input);
         return observeStrictOutput(
           result.success,
           result.success ? result.data : undefined,
@@ -392,16 +364,12 @@ const strippedAndDropped: StrictEntryObservation = {
   keys: ["control"],
 };
 
-const prototypeReplacedByStrippedEntry: StrictEntryObservation = {
-  ...strippedAndDropped,
-  ordinaryPrototype: false,
-};
-
 const expectedStrictObservations: Readonly<
   Record<SchemaOnlyCaseName, StrictEntryObservation>
 > = {
-  "current-zod": strippedAndDropped,
-  "compiled-zod": prototypeReplacedByStrippedEntry,
+  "zod-4.4-interpreted": strippedAndDropped,
+  "zod-4.5-interpreted": strippedAndDropped,
+  "zod-4.5-compiled": strippedAndDropped,
   ajv: rejectedByStrictEntry,
   typebox: rejectedByStrictEntry,
   valibot: strippedAndDropped,
@@ -448,7 +416,7 @@ describe("schema-only __proto__ handling without the manual normalizer", () => {
 });
 
 describe("schema-only with non-loose entry schemas", () => {
-  test("the marker survives nowhere and only compiled Zod retains the emptied key", async () => {
+  test("the marker survives nowhere", async () => {
     const input: unknown = JSON.parse(await readFile(FIXTURE_PATH, "utf8"));
     const globalPrototypeDescriptors = Object.getOwnPropertyDescriptors(
       Object.prototype,
@@ -479,34 +447,26 @@ describe("schema-only with non-loose entry schemas", () => {
     }
   });
 
-  test("compiled Zod inherits declared entry fields from the replaced prototype; interpreted Zod does not", async () => {
+  test("Zod 4.4, Zod 4.5, and native-compiled Zod keep ordinary prototypes", async () => {
     const input: unknown = JSON.parse(await readFile(LABEL_FIXTURE_PATH, "utf8"));
-    if (compiledSimpleStrictSchema === undefined) {
-      throw new Error("Compiled strict schema was not initialized");
-    }
     const globalPrototypeDescriptors = Object.getOwnPropertyDescriptors(
       Object.prototype,
     );
 
-    const interpreted = SimpleStrictRecordSchema.safeParse(input);
-    expect(interpreted.success).toBeTrue();
-    if (!interpreted.success || !isRecord(interpreted.data)) {
-      throw new Error("Interpreted strict parse failed");
+    const results = [
+      zod44SimpleStrictRecordSchema.safeParse(input),
+      SimpleStrictRecordSchema.safeParse(input),
+      nativeCompiledSimpleStrictSchema.safeParse(input),
+    ];
+    for (const result of results) {
+      expect(result.success).toBeTrue();
+      if (!result.success || !isRecord(result.data)) {
+        throw new Error("Zod strict parse failed");
+      }
+      expect(Object.keys(result.data)).toEqual(["control"]);
+      expect(result.data.label).toBeUndefined();
+      expect(Object.getPrototypeOf(result.data)).toBe(Object.prototype);
     }
-    expect(Object.keys(interpreted.data)).toEqual(["control"]);
-    expect(interpreted.data.label).toBeUndefined();
-    expect(Object.getPrototypeOf(interpreted.data)).toBe(Object.prototype);
-
-    const compiled = compiledSimpleStrictSchema.safeParse(input);
-    expect(compiled.success).toBeTrue();
-    if (!compiled.success || !isRecord(compiled.data)) {
-      throw new Error("Compiled strict parse failed");
-    }
-    expect(Object.keys(compiled.data)).toEqual(["control"]);
-    expect(Object.hasOwn(compiled.data, "label")).toBeFalse();
-    expect(compiled.data.label).toBe("injected-prototype-label");
-    expect(compiled.data.isAdmin).toBeUndefined();
-    expect(Object.getPrototypeOf(compiled.data)).not.toBe(Object.prototype);
 
     expect(
       Object.getOwnPropertyDescriptors(Object.prototype),

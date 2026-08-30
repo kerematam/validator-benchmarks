@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import type { ValidatorAdapter } from "../src/contract/normalized-issue";
@@ -7,15 +7,20 @@ import {
   createBenchmarkApp,
 } from "../src/http/create-app";
 import { ajvAdapter } from "../src/validators/ajv";
-import { currentZodAdapter } from "../src/validators/current-zod";
-import { currentZodManualNormalizerAdapter } from "../src/validators/current-zod-manual-normalizer";
-import { loadCompiledZodAdapter } from "../src/validators/load-compiled-zod";
-import { loadCompiledZodManualNormalizerAdapter } from "../src/validators/load-compiled-zod-manual-normalizer";
+import { zod45NativeTransformAdapter } from "../src/validators/current-zod";
+import { zod45SeparateNormalizationAdapter } from "../src/validators/current-zod-manual-normalizer";
+import { createNativeCompiledZodAdapter } from "../src/validators/native-compiled-zod";
+import {
+  createNativeCompiledZodSeparateNormalizationAdapter,
+  createNativeCompiledZodValidateSeparateNormalizationAdapter,
+} from "../src/validators/native-compiled-zod-manual-normalizer";
 import { noValidationAdapter } from "../src/validators/none";
 import { typeboxAdapter } from "../src/validators/typebox";
 import { typeboxNativeTransformAdapter } from "../src/validators/typebox-native-transform";
 import { valibotAdapter } from "../src/validators/valibot";
 import { valibotNativeTransformAdapter } from "../src/validators/valibot-native-transform";
+import { zod44NativeTransformAdapter } from "../src/validators/zod-4-4";
+import { zod44SeparateNormalizationAdapter } from "../src/validators/zod-4-4-manual-normalizer";
 
 type PrototypeKeyBehavior =
   | "dropped"
@@ -54,8 +59,11 @@ interface PrototypeCellExpectedResult {
   readonly validated: PrototypeCellObservation | undefined;
 }
 
-let compiledZodAdapter: ValidatorAdapter | undefined;
-let compiledZodManualNormalizerAdapter: ValidatorAdapter | undefined;
+const zod45CompiledNativeTransformAdapter = createNativeCompiledZodAdapter();
+const zod45CompiledSeparateNormalizationAdapter =
+  createNativeCompiledZodSeparateNormalizationAdapter();
+const zod45CompiledValidateSeparateNormalizationAdapter =
+  createNativeCompiledZodValidateSeparateNormalizationAdapter();
 const PROTOTYPE_KEY_REQUEST_PATH = resolve(
   "test/fixtures/prototype-key-request.json",
 );
@@ -65,23 +73,6 @@ const PROTOTYPE_OBJECT_REQUEST_PATH = resolve(
 const PROTOTYPE_CELL_REQUEST_PATH = resolve(
   "test/fixtures/prototype-cell-request.json",
 );
-
-async function runBuild(script: string): Promise<void> {
-  const build = Bun.spawn([Bun.argv[0] ?? "bun", "run", script], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [exitCode, stdout, stderr] = await Promise.all([
-    build.exited,
-    new Response(build.stdout).text(),
-    new Response(build.stderr).text(),
-  ]);
-  if (exitCode !== 0) {
-    throw new Error(
-      `${script} failed: ${stderr.trim() || stdout.trim()}`,
-    );
-  }
-}
 
 async function reserveLoopbackPort(): Promise<number> {
   const reservation = createServer();
@@ -107,34 +98,15 @@ async function reserveLoopbackPort(): Promise<number> {
   return port;
 }
 
-beforeAll(async () => {
-  await runBuild("build:compiled");
-  await runBuild("build:compiled:manual-normalizer");
-
-  compiledZodAdapter = await loadCompiledZodAdapter(
-    resolve("dist/compiled-zod-external/compiled-zod-entry.js"),
-  );
-  compiledZodManualNormalizerAdapter =
-    await loadCompiledZodManualNormalizerAdapter(
-      resolve(
-        "dist/compiled-zod-manual-normalizer/compiled-zod-manual-normalizer-entry.js",
-      ),
-    );
-});
-
 function adapters(): readonly ValidatorAdapter[] {
-  if (
-    compiledZodAdapter === undefined ||
-    compiledZodManualNormalizerAdapter === undefined
-  ) {
-    throw new Error("Compiled adapters were not initialized");
-  }
-
   return [
-    currentZodAdapter,
-    compiledZodAdapter,
-    currentZodManualNormalizerAdapter,
-    compiledZodManualNormalizerAdapter,
+    zod44NativeTransformAdapter,
+    zod44SeparateNormalizationAdapter,
+    zod45NativeTransformAdapter,
+    zod45SeparateNormalizationAdapter,
+    zod45CompiledNativeTransformAdapter,
+    zod45CompiledSeparateNormalizationAdapter,
+    zod45CompiledValidateSeparateNormalizationAdapter,
     ajvAdapter,
     typeboxAdapter,
     typeboxNativeTransformAdapter,
@@ -222,23 +194,37 @@ function observePrototypeCellRow(
 const expectedBehavior: Readonly<
   Record<ValidatorAdapter["name"], PrototypeKeyObservation>
 > = {
-  "current-zod": {
+  "zod-4.4-native-transform": {
     behavior: "dropped",
     inheritedCellLabel: undefined,
     serializedRow: "{}",
   },
-  "compiled-zod": {
-    behavior: "preserved-own-key",
-    inheritedCellLabel: undefined,
-    serializedRow:
-      '{"__proto__":[{"label":"Synthetic Prototype Probe Cell","value":"SYNTHETIC-PROTOTYPE-PROBE-VALUE"}]}',
-  },
-  "zod-manual-normalizer": {
+  "zod-4.4-separate-normalization": {
     behavior: "dropped",
     inheritedCellLabel: undefined,
     serializedRow: "{}",
   },
-  "compiled-zod-manual-normalizer": {
+  "zod-4.5-native-transform": {
+    behavior: "dropped",
+    inheritedCellLabel: undefined,
+    serializedRow: "{}",
+  },
+  "zod-4.5-separate-normalization": {
+    behavior: "dropped",
+    inheritedCellLabel: undefined,
+    serializedRow: "{}",
+  },
+  "zod-4.5-compiled-native-transform": {
+    behavior: "dropped",
+    inheritedCellLabel: undefined,
+    serializedRow: "{}",
+  },
+  "zod-4.5-compiled-separate-normalization": {
+    behavior: "dropped",
+    inheritedCellLabel: undefined,
+    serializedRow: "{}",
+  },
+  "zod-4.5-compiled-validate-separate-normalization": {
     behavior: "dropped",
     inheritedCellLabel: undefined,
     serializedRow: "{}",
@@ -293,15 +279,33 @@ const preservedPrototypeObject: PrototypeObjectObservation = {
 const expectedPrototypeObjectResult: Readonly<
   Record<ValidatorAdapter["name"], PrototypeObjectExpectedResult>
 > = {
-  "current-zod": { status: 200, validated: droppedPrototypeObject },
-  "compiled-zod": { status: 400, validated: undefined },
-  "zod-manual-normalizer": {
+  "zod-4.4-native-transform": {
     status: 200,
     validated: droppedPrototypeObject,
   },
-  "compiled-zod-manual-normalizer": {
-    status: 400,
-    validated: undefined,
+  "zod-4.4-separate-normalization": {
+    status: 200,
+    validated: droppedPrototypeObject,
+  },
+  "zod-4.5-native-transform": {
+    status: 200,
+    validated: droppedPrototypeObject,
+  },
+  "zod-4.5-separate-normalization": {
+    status: 200,
+    validated: droppedPrototypeObject,
+  },
+  "zod-4.5-compiled-native-transform": {
+    status: 200,
+    validated: droppedPrototypeObject,
+  },
+  "zod-4.5-compiled-separate-normalization": {
+    status: 200,
+    validated: droppedPrototypeObject,
+  },
+  "zod-4.5-compiled-validate-separate-normalization": {
+    status: 200,
+    validated: droppedPrototypeObject,
   },
   ajv: { status: 400, validated: undefined },
   typebox: { status: 400, validated: undefined },
@@ -340,16 +344,31 @@ const pollutedRowAfterCellPayload: PrototypeCellObservation = {
 const expectedPrototypeCellResult: Readonly<
   Record<ValidatorAdapter["name"], PrototypeCellExpectedResult>
 > = {
-  "current-zod": { status: 200, validated: plainRowAfterCellPayload },
-  "compiled-zod": {
-    status: 200,
-    validated: preservedOwnKeyAfterCellPayload,
-  },
-  "zod-manual-normalizer": {
+  "zod-4.4-native-transform": {
     status: 200,
     validated: plainRowAfterCellPayload,
   },
-  "compiled-zod-manual-normalizer": {
+  "zod-4.4-separate-normalization": {
+    status: 200,
+    validated: plainRowAfterCellPayload,
+  },
+  "zod-4.5-native-transform": {
+    status: 200,
+    validated: plainRowAfterCellPayload,
+  },
+  "zod-4.5-separate-normalization": {
+    status: 200,
+    validated: plainRowAfterCellPayload,
+  },
+  "zod-4.5-compiled-native-transform": {
+    status: 200,
+    validated: plainRowAfterCellPayload,
+  },
+  "zod-4.5-compiled-separate-normalization": {
+    status: 200,
+    validated: plainRowAfterCellPayload,
+  },
+  "zod-4.5-compiled-validate-separate-normalization": {
     status: 200,
     validated: plainRowAfterCellPayload,
   },

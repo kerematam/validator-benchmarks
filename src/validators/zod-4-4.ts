@@ -1,18 +1,18 @@
 import {
   DiagnosticStructuredReportRequestSchema,
   StructuredReportRequestSchema,
-} from "../contract/zod-schema";
+} from "../contract/zod-4-4-schema";
 import type {
   ValidationResult,
   ValidatorAdapter,
 } from "../contract/normalized-issue";
 import { validateWithZodSchema } from "./zod-result";
 
-export function validateZod45NativeTransform(input: unknown): ValidationResult {
+export function validateZod44NativeTransform(input: unknown): ValidationResult {
   return validateWithZodSchema(StructuredReportRequestSchema, input);
 }
 
-export function validateDiagnosticZod45NativeTransform(
+export function validateDiagnosticZod44NativeTransform(
   input: unknown,
 ): ValidationResult {
   return validateWithZodSchema(
@@ -21,14 +21,14 @@ export function validateDiagnosticZod45NativeTransform(
   );
 }
 
-export const zod45NativeTransformAdapter: ValidatorAdapter = {
-  name: "zod-4.5-native-transform",
+export const zod44NativeTransformAdapter: ValidatorAdapter = {
+  name: "zod-4.4-native-transform",
   inputOwnership: "clone",
-  validate: validateZod45NativeTransform,
+  validate: validateZod44NativeTransform,
 };
 
-export const diagnosticZod45NativeTransformAdapter: ValidatorAdapter = {
-  name: "zod-4.5-native-transform",
+export const diagnosticZod44NativeTransformAdapter: ValidatorAdapter = {
+  name: "zod-4.4-native-transform",
   inputOwnership: "clone",
-  validate: validateDiagnosticZod45NativeTransform,
+  validate: validateDiagnosticZod44NativeTransform,
 };

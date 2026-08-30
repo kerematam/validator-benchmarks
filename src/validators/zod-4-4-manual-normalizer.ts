@@ -1,8 +1,8 @@
-import type { ZodType } from "zod";
+import type { ZodType } from "zod-4-4";
 import {
   DiagnosticManualNormalizerStructuredReportRequestSchema,
   ManualNormalizerStructuredReportRequestSchema,
-} from "../contract/zod-manual-normalizer-schema";
+} from "../contract/zod-4-4-manual-normalizer-schema";
 import {
   normalizedIssueFromZod,
   sortNormalizedIssues,
@@ -14,7 +14,7 @@ import {
   prepareRequestInPlace,
 } from "./contract-runtime";
 
-function validateWithManualNormalizer(
+function validateWithSeparateNormalization(
   schema: ZodType,
   input: unknown,
 ): ValidationResult {
@@ -41,32 +41,32 @@ function validateWithManualNormalizer(
   return { success: true, data: normalized.data, nativeIssues: [] };
 }
 
-export function validateZod45SeparateNormalization(
+export function validateZod44SeparateNormalization(
   input: unknown,
 ): ValidationResult {
-  return validateWithManualNormalizer(
+  return validateWithSeparateNormalization(
     ManualNormalizerStructuredReportRequestSchema,
     input,
   );
 }
 
-export function validateDiagnosticZod45SeparateNormalization(
+export function validateDiagnosticZod44SeparateNormalization(
   input: unknown,
 ): ValidationResult {
-  return validateWithManualNormalizer(
+  return validateWithSeparateNormalization(
     DiagnosticManualNormalizerStructuredReportRequestSchema,
     input,
   );
 }
 
-export const zod45SeparateNormalizationAdapter: ValidatorAdapter = {
-  name: "zod-4.5-separate-normalization",
+export const zod44SeparateNormalizationAdapter: ValidatorAdapter = {
+  name: "zod-4.4-separate-normalization",
   inputOwnership: "mutate",
-  validate: validateZod45SeparateNormalization,
+  validate: validateZod44SeparateNormalization,
 };
 
-export const diagnosticZod45SeparateNormalizationAdapter: ValidatorAdapter = {
-  name: "zod-4.5-separate-normalization",
+export const diagnosticZod44SeparateNormalizationAdapter: ValidatorAdapter = {
+  name: "zod-4.4-separate-normalization",
   inputOwnership: "mutate",
-  validate: validateDiagnosticZod45SeparateNormalization,
+  validate: validateDiagnosticZod44SeparateNormalization,
 };

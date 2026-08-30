@@ -35,7 +35,7 @@ function readProperty(value: unknown, key: string): unknown {
   return undefined;
 }
 
-describe("current Zod contract snapshot", () => {
+describe("Zod 4.5 contract snapshot", () => {
   test("normalizes a hand-written canonical request to the complete expected value", () => {
     const input: unknown = {
       data: [
@@ -222,7 +222,7 @@ describe("current Zod contract snapshot", () => {
   });
 });
 
-describe("current Zod invalid-input behavior", () => {
+describe("Zod 4.5 invalid-input behavior", () => {
   const invalidCases: readonly {
     readonly name: string;
     readonly input: unknown;

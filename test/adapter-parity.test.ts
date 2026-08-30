@@ -1,6 +1,4 @@
-import { beforeAll, describe, expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { describe, expect, test } from "bun:test";
 import type { ValidatorAdapter } from "../src/contract/normalized-issue";
 import {
   DIAGNOSTIC_MAX_REPORTS,
@@ -12,15 +10,18 @@ import {
   diagnosticAjvAdapter,
 } from "../src/validators/ajv";
 import {
-  currentZodAdapter,
-  diagnosticCurrentZodAdapter,
+  diagnosticZod45NativeTransformAdapter,
+  zod45NativeTransformAdapter,
 } from "../src/validators/current-zod";
-import { loadCompiledZodAdapter } from "../src/validators/load-compiled-zod";
 import {
-  currentZodManualNormalizerAdapter,
-  diagnosticCurrentZodManualNormalizerAdapter,
+  diagnosticZod45SeparateNormalizationAdapter,
+  zod45SeparateNormalizationAdapter,
 } from "../src/validators/current-zod-manual-normalizer";
-import { loadCompiledZodManualNormalizerAdapter } from "../src/validators/load-compiled-zod-manual-normalizer";
+import { createNativeCompiledZodAdapter } from "../src/validators/native-compiled-zod";
+import {
+  createNativeCompiledZodSeparateNormalizationAdapter,
+  createNativeCompiledZodValidateSeparateNormalizationAdapter,
+} from "../src/validators/native-compiled-zod-manual-normalizer";
 import { noValidationAdapter } from "../src/validators/none";
 import {
   isTypeBoxAccelerated,
@@ -42,93 +43,26 @@ import {
   diagnosticValibotNativeTransformAdapter,
   valibotNativeTransformAdapter,
 } from "../src/validators/valibot-native-transform";
+import {
+  diagnosticZod44NativeTransformAdapter,
+  zod44NativeTransformAdapter,
+} from "../src/validators/zod-4-4";
+import {
+  diagnosticZod44SeparateNormalizationAdapter,
+  zod44SeparateNormalizationAdapter,
+} from "../src/validators/zod-4-4-manual-normalizer";
 
-let compiledZodAdapter: ValidatorAdapter;
-let diagnosticCompiledZodAdapter: ValidatorAdapter;
-let compiledZodManualNormalizerAdapter: ValidatorAdapter;
-let diagnosticCompiledZodManualNormalizerAdapter: ValidatorAdapter;
-let fullyBundledRuntimeCompatible: boolean | undefined;
-
-beforeAll(async () => {
-  const build = Bun.spawn([Bun.argv[0] ?? "bun", "run", "build:compiled"], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [exitCode, stdout, stderr] = await Promise.all([
-    build.exited,
-    new Response(build.stdout).text(),
-    new Response(build.stderr).text(),
-  ]);
-  if (exitCode !== 0) {
-    throw new Error(
-      `Compiled build gate failed: ${stderr.trim() || stdout.trim()}`,
-    );
-  }
-  compiledZodAdapter = await loadCompiledZodAdapter(
-    resolve("dist/compiled-zod-external/compiled-zod-entry.js"),
-  );
-  diagnosticCompiledZodAdapter = await loadCompiledZodAdapter(
-    resolve("dist/compiled-zod-external/compiled-zod-entry.js"),
-    "diagnostic",
-  );
-
-  const manualNormalizerBuild = Bun.spawn(
-    [Bun.argv[0] ?? "bun", "run", "build:compiled:manual-normalizer"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
-  const [manualExitCode, manualStdout, manualStderr] = await Promise.all([
-    manualNormalizerBuild.exited,
-    new Response(manualNormalizerBuild.stdout).text(),
-    new Response(manualNormalizerBuild.stderr).text(),
-  ]);
-  if (manualExitCode !== 0) {
-    throw new Error(
-      `Compiled manual-normalizer build gate failed: ${manualStderr.trim() || manualStdout.trim()}`,
-    );
-  }
-  const manualArtifact = resolve(
-    "dist/compiled-zod-manual-normalizer/compiled-zod-manual-normalizer-entry.js",
-  );
-  compiledZodManualNormalizerAdapter =
-    await loadCompiledZodManualNormalizerAdapter(manualArtifact);
-  diagnosticCompiledZodManualNormalizerAdapter =
-    await loadCompiledZodManualNormalizerAdapter(manualArtifact, "diagnostic");
-
-  const bundledBuild = Bun.spawn(
-    [Bun.argv[0] ?? "bun", "run", "build:compiled:bundled"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
-  const [bundledExitCode, bundledStdout, bundledStderr] = await Promise.all([
-    bundledBuild.exited,
-    new Response(bundledBuild.stdout).text(),
-    new Response(bundledBuild.stderr).text(),
-  ]);
-  if (bundledExitCode !== 0) {
-    throw new Error(
-      `Bundled compatibility build failed: ${bundledStderr.trim() || bundledStdout.trim()}`,
-    );
-  }
-  const compatibilityInput: unknown = JSON.parse(
-    await readFile(
-      resolve("dist/compiled-zod-bundled/compatibility.json"),
-      "utf8",
-    ),
-  );
-  if (
-    typeof compatibilityInput !== "object" ||
-    compatibilityInput === null ||
-    Array.isArray(compatibilityInput)
-  ) {
-    throw new Error("Bundled compatibility report is invalid");
-  }
-  const compatibilityEntry = Object.entries(compatibilityInput).find(
-    ([key]) => key === "runtimeCompatible",
-  );
-  if (typeof compatibilityEntry?.[1] !== "boolean") {
-    throw new Error("Bundled compatibility verdict is missing");
-  }
-  fullyBundledRuntimeCompatible = compatibilityEntry[1];
-});
+const zod45CompiledNativeTransformAdapter = createNativeCompiledZodAdapter();
+const diagnosticZod45CompiledNativeTransformAdapter =
+  createNativeCompiledZodAdapter("diagnostic");
+const zod45CompiledSeparateNormalizationAdapter =
+  createNativeCompiledZodSeparateNormalizationAdapter();
+const diagnosticZod45CompiledSeparateNormalizationAdapter =
+  createNativeCompiledZodSeparateNormalizationAdapter("diagnostic");
+const zod45CompiledValidateSeparateNormalizationAdapter =
+  createNativeCompiledZodValidateSeparateNormalizationAdapter();
+const diagnosticZod45CompiledValidateSeparateNormalizationAdapter =
+  createNativeCompiledZodValidateSeparateNormalizationAdapter("diagnostic");
 
 function fresh(value: unknown): unknown {
   return structuredClone(value);
@@ -153,10 +87,13 @@ function minimalReport(): Record<string, unknown> {
 
 function realAdapters(): readonly ValidatorAdapter[] {
   return [
-    currentZodAdapter,
-    compiledZodAdapter,
-    currentZodManualNormalizerAdapter,
-    compiledZodManualNormalizerAdapter,
+    zod44NativeTransformAdapter,
+    zod44SeparateNormalizationAdapter,
+    zod45NativeTransformAdapter,
+    zod45SeparateNormalizationAdapter,
+    zod45CompiledNativeTransformAdapter,
+    zod45CompiledSeparateNormalizationAdapter,
+    zod45CompiledValidateSeparateNormalizationAdapter,
     ajvAdapter,
     typeboxAdapter,
     typeboxNativeTransformAdapter,
@@ -167,10 +104,13 @@ function realAdapters(): readonly ValidatorAdapter[] {
 
 function diagnosticAdapters(): readonly ValidatorAdapter[] {
   return [
-    diagnosticCurrentZodAdapter,
-    diagnosticCompiledZodAdapter,
-    diagnosticCurrentZodManualNormalizerAdapter,
-    diagnosticCompiledZodManualNormalizerAdapter,
+    diagnosticZod44NativeTransformAdapter,
+    diagnosticZod44SeparateNormalizationAdapter,
+    diagnosticZod45NativeTransformAdapter,
+    diagnosticZod45SeparateNormalizationAdapter,
+    diagnosticZod45CompiledNativeTransformAdapter,
+    diagnosticZod45CompiledSeparateNormalizationAdapter,
+    diagnosticZod45CompiledValidateSeparateNormalizationAdapter,
     diagnosticAjvAdapter,
     diagnosticTypeboxAdapter,
     diagnosticTypeboxNativeTransformAdapter,
@@ -187,9 +127,11 @@ describe("valid adapter parity", () => {
         throw new Error("Unexpected profile name supplied by the test table");
       }
       const generated = generateSyntheticProfile(profileName, 20_260_807);
-      const oracle = currentZodAdapter.validate(fresh(generated.request));
+      const oracle = zod45NativeTransformAdapter.validate(
+        fresh(generated.request),
+      );
       if (!oracle.success) {
-        throw new Error("Current Zod rejected a valid generated profile");
+        throw new Error("Zod 4.5 rejected a valid generated profile");
       }
 
       for (const adapter of realAdapters()) {
@@ -249,9 +191,9 @@ describe("valid adapter parity", () => {
         },
       ],
     };
-    const oracle = currentZodAdapter.validate(fresh(input));
+    const oracle = zod45NativeTransformAdapter.validate(fresh(input));
     if (!oracle.success) {
-      throw new Error("Current Zod rejected the valid hand-written case");
+      throw new Error("Zod 4.5 rejected the valid hand-written case");
     }
 
     for (const adapter of realAdapters()) {
@@ -330,9 +272,9 @@ describe("valid adapter parity", () => {
     ];
 
     for (const input of cases) {
-      const oracle = currentZodAdapter.validate(fresh(input));
+      const oracle = zod45NativeTransformAdapter.validate(fresh(input));
       if (!oracle.success) {
-        throw new Error("Current Zod rejected a valid alias regression case");
+        throw new Error("Zod 4.5 rejected a valid alias regression case");
       }
 
       for (const adapter of realAdapters()) {
@@ -374,11 +316,11 @@ describe("valid adapter parity", () => {
         "diagnostic-10000",
         20_260_807,
       );
-      const oracle = diagnosticCurrentZodAdapter.validate(
+      const oracle = diagnosticZod45NativeTransformAdapter.validate(
         fresh(generated.request),
       );
       if (!oracle.success) {
-        throw new Error("Diagnostic current Zod rejected the generated profile");
+        throw new Error("Diagnostic Zod 4.5 rejected the generated profile");
       }
 
       for (const adapter of diagnosticAdapters()) {
@@ -759,9 +701,11 @@ describe("invalid adapter parity", () => {
 
   for (const invalidCase of cases) {
     test(`matches the oracle for ${invalidCase.name}`, () => {
-      const oracle = currentZodAdapter.validate(fresh(invalidCase.input));
+      const oracle = zod45NativeTransformAdapter.validate(
+        fresh(invalidCase.input),
+      );
       if (oracle.success) {
-        throw new Error("Current Zod unexpectedly accepted an invalid case");
+        throw new Error("Zod 4.5 unexpectedly accepted an invalid case");
       }
 
       for (const adapter of realAdapters()) {
@@ -779,7 +723,11 @@ describe("adapter input ownership", () => {
   test("records clone, mutation, and reuse ownership accurately", () => {
     const generated = generateSyntheticProfile("smoke", 20_260_807);
 
-    for (const adapter of [currentZodAdapter, compiledZodAdapter]) {
+    for (const adapter of [
+      zod44NativeTransformAdapter,
+      zod45NativeTransformAdapter,
+      zod45CompiledNativeTransformAdapter,
+    ]) {
       const input = fresh(generated.request);
       const result = adapter.validate(input);
       expect(result.success, adapter.name).toBeTrue();
@@ -789,7 +737,12 @@ describe("adapter input ownership", () => {
       expect(adapter.inputOwnership).toBe("clone");
     }
 
-    for (const adapter of [ajvAdapter, typeboxAdapter, valibotAdapter]) {
+    for (const adapter of [
+      zod45CompiledValidateSeparateNormalizationAdapter,
+      ajvAdapter,
+      typeboxAdapter,
+      valibotAdapter,
+    ]) {
       const input = fresh(generated.request);
       const result = adapter.validate(input);
       expect(result.success, adapter.name).toBeTrue();
@@ -800,8 +753,9 @@ describe("adapter input ownership", () => {
     }
 
     for (const adapter of [
-      currentZodManualNormalizerAdapter,
-      compiledZodManualNormalizerAdapter,
+      zod44SeparateNormalizationAdapter,
+      zod45SeparateNormalizationAdapter,
+      zod45CompiledSeparateNormalizationAdapter,
       typeboxNativeTransformAdapter,
       valibotNativeTransformAdapter,
     ]) {
@@ -823,8 +777,19 @@ describe("adapter input ownership", () => {
     expect(noValidationAdapter.inputOwnership).toBe("reuse");
   });
 
-  test("records the Bun 1.3.14 fully bundled compatibility failure separately", () => {
-    expect(fullyBundledRuntimeCompatible).toBeFalse();
+  test("requires native Zod compilation for both validation envelopes", () => {
+    expect(zod45CompiledNativeTransformAdapter.name).toBe(
+      "zod-4.5-compiled-native-transform",
+    );
+    expect(diagnosticZod45CompiledNativeTransformAdapter.name).toBe(
+      "zod-4.5-compiled-native-transform",
+    );
+    expect(zod45CompiledSeparateNormalizationAdapter.name).toBe(
+      "zod-4.5-compiled-separate-normalization",
+    );
+    expect(zod45CompiledValidateSeparateNormalizationAdapter.name).toBe(
+      "zod-4.5-compiled-validate-separate-normalization",
+    );
   });
 
   test("uses TypeBox's accelerated compiler path", () => {

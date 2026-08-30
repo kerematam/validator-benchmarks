@@ -1,5 +1,3 @@
-import type { ZodError } from "zod";
-
 export type NormalizedIssueCategory =
   | "invalid_type"
   | "non_blank"
@@ -30,10 +28,13 @@ export type InputOwnership = "clone" | "mutate" | "reuse";
 
 export interface ValidatorAdapter {
   readonly name:
-    | "current-zod"
-    | "compiled-zod"
-    | "zod-manual-normalizer"
-    | "compiled-zod-manual-normalizer"
+    | "zod-4.4-native-transform"
+    | "zod-4.4-separate-normalization"
+    | "zod-4.5-native-transform"
+    | "zod-4.5-separate-normalization"
+    | "zod-4.5-compiled-native-transform"
+    | "zod-4.5-compiled-separate-normalization"
+    | "zod-4.5-compiled-validate-separate-normalization"
     | "ajv"
     | "typebox"
     | "typebox-native-transform"
@@ -44,6 +45,11 @@ export interface ValidatorAdapter {
   validate(input: unknown): ValidationResult;
 }
 
+export interface ZodIssueLike {
+  readonly code: string;
+  readonly path: readonly PropertyKey[];
+}
+
 function normalizePathSegment(
   segment: PropertyKey,
 ): NormalizedIssuePathSegment {
@@ -51,7 +57,7 @@ function normalizePathSegment(
 }
 
 export function normalizedIssueFromZod(
-  issue: ZodError["issues"][number],
+  issue: ZodIssueLike,
 ): NormalizedIssue {
   let category: NormalizedIssueCategory;
   switch (issue.code) {

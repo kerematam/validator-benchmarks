@@ -1,7 +1,7 @@
 # `__proto__` Security Behavior Across Validation Pipelines
 
 Date: August 10, 2026
-Reverified: August 16, 2026
+Reverified: August 30, 2026 for the active Zod 4.4/4.5 matrix
 Status: Confirmed local integration behavior; vulnerable shared normalizer retained for benchmarking
 Scope: Structured-report row keys in this repository's Bun validation adapters
 
@@ -31,7 +31,31 @@ object invokes the legacy inherited `Object.prototype.__proto__` setter. The
 cell array becomes the normalized row's prototype instead of an own data
 property.
 
-## Variant matrix
+## Active Zod 4.4/4.5 matrix
+
+The build-time `zod-compiler` cases were retired after the separate August 30
+compiler comparison. The active Zod cases now behave as follows:
+
+| Benchmark variant | Observed normalized-row behavior |
+| --- | --- |
+| Zod 4.4.3 interpreted, native transforms | Drops `__proto__` |
+| Zod 4.4.3 interpreted, separate normalization | Drops `__proto__` before normalization |
+| Zod 4.5.4 interpreted, native transforms | Drops `__proto__` |
+| Zod 4.5.4 interpreted, separate normalization | Drops `__proto__` before normalization |
+| Zod 4.5.4 native compiler, native transforms | Drops `__proto__` |
+| Zod 4.5.4 native compiler, separate normalization | Drops `__proto__` before normalization |
+| Zod 4.5.4 compiled boolean validation, separate normalization | Explicitly reproduces Zod 4.5's `__proto__` stripping before returning output |
+
+The boolean-validation case needs explicit handling because `z.validate()`
+returns only a verdict, not Zod's sanitized parse output. Passing the original
+accepted object directly to dynamic-key normalization would reintroduce the
+unsafe key. Its adapter therefore skips `__proto__` during normalization, and
+the HTTP tests verify that the key is neither retained nor used as a prototype.
+
+## Historical August 16 variant matrix
+
+The following table records the earlier build-time-compiler suite. It is
+retained as historical evidence and is not the active benchmark matrix.
 
 | Library or mode | Benchmark variant | Request accepted | Observed normalized-row behavior | Security classification for this path |
 | --- | --- | --- | --- | --- |
@@ -46,7 +70,7 @@ property.
 | Valibot | Valibot native transform | Yes | `__proto__` is dropped | No prototype injection; silent data loss |
 | No validation | None | Yes | Preserved as an own data property from JSON parsing | No prototype injection observed; not a usable validator |
 
-The Current Zod versus Compiled Zod difference is a separate compiler behavior
+The historical Current Zod versus Compiled Zod difference is a separate compiler behavior
 divergence: Current Zod drops the key, while its compiled form preserves it as
 a safe own property. Neither path produced row-local injection in this test,
 but they are not functionally identical for this edge case.

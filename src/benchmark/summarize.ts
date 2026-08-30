@@ -251,7 +251,7 @@ export function summarizeBenchmarkRun(run: BenchmarkRun): string {
     `- Seed: \`${run.seed}\``,
     `- Fresh-process rounds per mode/variant: ${run.rounds}`,
     `- Command: \`${run.command}\``,
-    `- Bun: ${run.environment.bunVersion}; Hono: ${run.environment.versions.hono}`,
+    `- Bun: ${run.environment.bunVersion}; Zod: ${run.environment.versions.zod44} and ${run.environment.versions.zod45}; Hono: ${run.environment.versions.hono}`,
     `- Execution environment: ${run.environment.executionEnvironment}`,
     `- Container limits: ${run.environment.containerLimits === null ? "n/a" : `${run.environment.containerLimits.cpuQuotaCores ?? "unlimited"} CPUs, ${run.environment.containerLimits.memoryLimitBytes === null ? "unlimited memory" : `${mebibytes(run.environment.containerLimits.memoryLimitBytes)} MiB memory`}, ${run.environment.containerLimits.swapLimitBytes === null ? "unlimited swap" : `${mebibytes(run.environment.containerLimits.swapLimitBytes)} MiB swap`}, ${run.environment.containerLimits.processLimit ?? "unlimited"} processes`}`,
     `- Container whole-run memory peak: ${run.environment.containerLimits?.wholeRunMemoryPeakBytes === null || run.environment.containerLimits?.wholeRunMemoryPeakBytes === undefined ? "n/a" : `${mebibytes(run.environment.containerLimits.wholeRunMemoryPeakBytes)} MiB`}`,

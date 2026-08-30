@@ -386,7 +386,7 @@ const cpuInfo = cpus();
 const hostActivityAfter = readHostActivitySnapshot();
 const containerLimits = await readContainerLimits(executionEnvironment);
 const run = BenchmarkRunSchema.parse({
-  schemaVersion: 3,
+  schemaVersion: 4,
   development: true,
   runId,
   createdAt,
@@ -411,8 +411,8 @@ const run = BenchmarkRunSchema.parse({
     bunVersion: Bun.version,
     versions: {
       hono: "4.12.11",
-      zod: "4.4.3",
-      zodCompiler: "1.23.6",
+      zod44: "4.4.3",
+      zod45: "4.5.4",
       ajv: "8.18.0",
       typebox: "1.3.11",
       valibot: "1.4.2",
@@ -441,21 +441,6 @@ await Promise.all([
     "utf8",
   ),
   copyFile(manifestPath, join(resultDirectory, "manifest.json")),
-  copyFile(
-    resolve("dist/compiled-zod-external/build-diagnostics.json"),
-    join(resultDirectory, "compiled-build-diagnostics.json"),
-  ),
-  copyFile(
-    resolve("dist/compiled-zod-manual-normalizer/build-diagnostics.json"),
-    join(
-      resultDirectory,
-      "compiled-manual-normalizer-build-diagnostics.json",
-    ),
-  ),
-  copyFile(
-    resolve("dist/compiled-zod-bundled/compatibility.json"),
-    join(resultDirectory, "compiled-bundled-compatibility.json"),
-  ),
 ]);
 
 console.log(

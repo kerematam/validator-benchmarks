@@ -4,7 +4,7 @@ import { summarizeBenchmarkRun } from "../src/benchmark/summarize";
 
 test("development summaries keep primary, decode, memory, and raw samples separate", () => {
   const run = BenchmarkRunSchema.parse({
-    schemaVersion: 3,
+    schemaVersion: 4,
     development: true,
     runId: "synthetic-run",
     createdAt: "2026-08-08T00:00:00.000Z",
@@ -26,8 +26,8 @@ test("development summaries keep primary, decode, memory, and raw samples separa
       bunVersion: "1.3.14",
       versions: {
         hono: "4.12.11",
-        zod: "4.4.3",
-        zodCompiler: "1.23.6",
+        zod44: "4.4.3",
+        zod45: "4.5.4",
         ajv: "8.18.0",
         typebox: "1.3.11",
         valibot: "1.4.2",
@@ -56,11 +56,11 @@ test("development summaries keep primary, decode, memory, and raw samples separa
     },
     samples: [
       {
-        schemaVersion: 3,
+        schemaVersion: 4,
         development: true,
         mode: "validator",
         primaryMetric: "validation-and-normalization",
-        variant: "current-zod",
+        variant: "zod-4.5-native-transform",
         profile: "smoke",
         validationEnvelope: "production",
         maximumReports: 2_000,

@@ -49,7 +49,7 @@ export const ContainerLimitsSchema = z.strictObject({
 });
 
 export const BenchmarkSampleSchema = z.strictObject({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   development: z.literal(true),
   mode: BenchmarkModeSchema,
   primaryMetric: z.enum([
@@ -80,7 +80,7 @@ export const BenchmarkSampleSchema = z.strictObject({
 export type BenchmarkSample = z.infer<typeof BenchmarkSampleSchema>;
 
 export const BenchmarkRunSchema = z.strictObject({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   development: z.literal(true),
   runId: z.string().min(1),
   createdAt: z.string().datetime(),
@@ -105,8 +105,8 @@ export const BenchmarkRunSchema = z.strictObject({
     bunVersion: z.literal("1.3.14"),
     versions: z.strictObject({
       hono: z.literal("4.12.11"),
-      zod: z.literal("4.4.3"),
-      zodCompiler: z.literal("1.23.6"),
+      zod44: z.literal("4.4.3"),
+      zod45: z.literal("4.5.4"),
       ajv: z.literal("8.18.0"),
       typebox: z.literal("1.3.11"),
       valibot: z.literal("1.4.2"),

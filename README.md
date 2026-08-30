@@ -9,10 +9,6 @@ the application that motivated the contract and contains no Effect runtime,
 renderer, archive code, production fixture, or customer-derived value. A
 minimal Bun + Hono route provides a separately measured HTTP integration mode.
 
-Read [PLAN.md](PLAN.md) before extending the project. It defines the isolation
-boundary, validator variants, fresh-process measurement protocol, privacy
-gates, and publication requirements.
-
 ## Implemented foundation
 
 The repository currently provides:
@@ -21,18 +17,18 @@ The repository currently provides:
 - a deterministic seeded generator for the `smoke`, `small`, and benchmark-only
   `diagnostic-10000` profiles;
 - manifests with topology, JSON structural counts, encoded bytes, and SHA-256;
-- current Zod and AOT-compiled Zod using native transforms, corresponding Zod
-  and compiled-Zod variants using the shared manual normalizer, Ajv, TypeBox,
-  and Valibot manual-normalizer variants, plus separate TypeBox and Valibot
-  native-transform variants with equivalent normalized output over the
-  declared synthetic profiles and contract corpus, and the explicitly labeled
-  no-validation floor;
-- value-level and invalid-issue corpus checks, mutation, and compiled-build
-  gates, while retaining implementation-specific edge behavior;
+- side-by-side Zod 4.4.3 and 4.5.4 interpreted variants using native
+  transforms and separate normalization; Zod 4.5 native-compiler variants for
+  both architectures; an additional compiled boolean-validation path that
+  performs diagnostic parsing only after failure; Ajv, TypeBox, and Valibot
+  controls; and the explicitly labeled no-validation floor;
+- value-level and invalid-issue corpus checks, mutation checks, and strict
+  native-compilation gates while retaining implementation-specific edge
+  behavior;
 - a minimal Bun + Hono validation route with stable success/error responses;
 - fresh-process validator-only and real loopback HTTP development modes;
-- raw sample, environment, memory, CPU/kernel-resource, manifest,
-  build-diagnostic, and Markdown summary artifacts; and
+- raw sample, environment, memory, CPU/kernel-resource, manifest, and Markdown
+  summary artifacts; and
 - a restricted artificial-vocabulary audit for generated request bodies.
 
 The 1,000- and 2,000-report production profiles, invalid performance workloads,
@@ -47,8 +43,8 @@ All declared versions are exact, without caret or tilde ranges:
 | --- | --- |
 | Bun | 1.3.14 |
 | Hono | 4.12.11 |
-| Zod | 4.3.6 |
-| zod-compiler | 1.23.6 |
+| Zod comparison baseline | 4.4.3 |
+| Zod current/native compiler | 4.5.4 |
 | Ajv | 8.18.0 |
 | TypeBox | 1.3.11 |
 | Valibot | 1.4.2 |
@@ -60,17 +56,11 @@ Install and run the correctness gates with:
 bun install --frozen-lockfile
 bun run typecheck
 bun run test
-bun run build:compiled
-bun run build:compiled:manual-normalizer
-bun run build:compiled:bundled
 ```
 
-The compiled builds keep packages external and verify compiler coverage plus
-runtime compiler markers before they can be used. The manual-normalizer build
-also fails unless both schemas are fast-path eligible with no fallbacks. The
-separate fully bundled compatibility probe currently records an incompatible
-runtime artifact under Bun 1.3.14; it is never substituted for the external
-build.
+The package alias `zod-4-4` keeps Zod 4.4.3 installed beside the primary
+`zod` 4.5.4 package. Zod 4.5 compiler adapters call `z.compile()` with strict
+mode during adapter setup, before warm-up and measurement.
 
 ## Contract snapshot
 
@@ -90,14 +80,23 @@ current contract's behaviors:
 The snapshot uses generic implementation names and has no runtime or build-time
 dependency on another repository.
 
-Current and compiled Zod use the schema's native preprocess, transform, and
-pipe stages. `zod-manual-normalizer`, `compiled-zod-manual-normalizer`, Ajv,
-TypeBox, and Valibot first validate the prepared raw shape with their native
-implementations, then use one shared normalization traversal. That traversal
-also rejects required names, column keys, and cell labels that become empty
-after trimming. Structural failure stops before normalization, so these
-adapters do not synthesize post-transform issues for an object that already
-failed raw validation.
+The Zod 4.4 and 4.5 native-transform variants use their schema's preprocess,
+transform, and pipe stages. The Zod 4.5 native-compiled equivalent compiles the
+final schema during adapter setup. Separate-normalization variants validate a
+prepared transform-free schema and then normalize in an explicit traversal.
+
+The additional `zod-4.5-compiled-validate-separate-normalization` variant uses
+`z.validate()` for the ordinary boolean verdict. It calls `safeParse()` only
+after rejection to construct normalized issues. Because boolean validation
+does not return Zod's parsed output, its separate normalization explicitly
+reproduces the schema's observed `__proto__` stripping before returning the
+normalized result.
+
+Ajv, TypeBox, and Valibot also validate a prepared raw shape before separate
+normalization. That traversal rejects required names, column keys, and cell
+labels that become empty after trimming. Structural failure stops before
+normalization, so these adapters do not synthesize post-transform issues for
+an object that already failed raw validation.
 
 `typebox-native-transform` uses the same alias-selection preparation, an
 accelerated TypeBox structural check, TypeBox decode codecs, and a second
@@ -117,7 +116,7 @@ adapters that pass the key to this repository's unsafe shared manual
 normalizer. See
 [`docs/security/prototype-key-validation-library-review.md`](./docs/security/prototype-key-validation-library-review.md)
 for the validator-versus-integration distinction and the separate compiled-Zod
-strict-record finding.
+strict-record finding from the historical build-time compiler investigation.
 
 ## Synthetic profiles
 
@@ -167,11 +166,12 @@ order by round:
   complete `fetch` through routing, server-side decoding, validation,
   normalization, the fixed small response, and response-body consumption.
 
-Generator work, file I/O, adapter loading, Ajv and TypeBox schema compilation,
-compiled-Zod build work, hashing, warm-up, and result formatting remain outside
-both primary timers. Variant modules load independently so one validator does
-not initialize the others in its benchmark child. The Hono route calls the
-adapters directly; Effect and application middleware are intentionally absent.
+Generator work, file I/O, adapter loading, native Zod, Ajv, and TypeBox schema
+compilation, hashing, warm-up, and result formatting remain outside both
+primary timers. Variant modules load
+independently so one validator does not initialize the others in its benchmark
+child. The Hono route calls the adapters directly; Effect and application
+middleware are intentionally absent.
 
 Each child takes `process.memoryUsage()` and `process.resourceUsage()` snapshots
 immediately around the primary timer. This records retained RSS and JavaScript
@@ -203,13 +203,12 @@ bun run summarize results/<run-id>/raw.json
 For manual route inspection:
 
 ```sh
-bun run build:compiled
-bun run server --variant current-zod --port 3000
+bun run server --variant zod-4.5-compiled-native-transform --port 3000
 ```
 
-Raw runs are written beneath `results/` with their manifest, compiled-build
-diagnostics, environment metadata, all individual samples, and a development
-summary. The directory is gitignored pending privacy and publication review.
+Raw runs are written beneath `results/` with their manifest, environment
+metadata, all individual samples, and a development summary. The directory is
+gitignored pending privacy and publication review.
 Development runs remain non-public engineering evidence until environmental
 controls, publication profiles, and release gates are complete.
 
@@ -247,14 +246,9 @@ primary evidence; sampled PSS/private values are supporting diagnostics. The
 sampler changes scheduling enough that its duration values must not replace the
 primary performance benchmark.
 
-`zod-manual-normalizer` and `compiled-zod-manual-normalizer` are first-class
-benchmark variants. They receive the original generated request, prepare
-container aliases, validate it with a transform-free Zod schema, and then
-invoke the same shared manual normalizer used by the non-Zod adapters. Both
-schemas must be 100% compilable; the compiled build additionally requires
-compiler fast-path eligibility with no fallbacks. Their timers cover validation
-plus normalization and use input bytes identical to the native-transform Zod
-variants.
+Every Zod version/compiler/normalization combination listed above is a
+first-class benchmark variant. Their timers cover validation plus
+normalization and use input bytes identical to the non-Zod controls.
 
 ## Privacy boundary
 
@@ -263,7 +257,7 @@ explicit artificial vocabulary. Failure output contains only issue kinds and
 structural paths, never rejected values. This is an early correctness gate; it
 does not replace the final local-only exact-string overlap audit, secret/PII
 history scans, manual artifact review, license choice, or the other publication
-gates in [PLAN.md](PLAN.md).
+gates.
 
 No remote should be added and no results should be published until every final
 privacy gate passes.

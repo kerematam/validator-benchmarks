@@ -1,13 +1,15 @@
-import { resolve } from "node:path";
 import { z } from "zod";
 import type { ValidationEnvelope } from "../contract/limits";
 import type { ValidatorAdapter } from "../contract/normalized-issue";
 
 export const ValidatorNameSchema = z.enum([
-  "current-zod",
-  "compiled-zod",
-  "zod-manual-normalizer",
-  "compiled-zod-manual-normalizer",
+  "zod-4.4-native-transform",
+  "zod-4.4-separate-normalization",
+  "zod-4.5-native-transform",
+  "zod-4.5-separate-normalization",
+  "zod-4.5-compiled-native-transform",
+  "zod-4.5-compiled-separate-normalization",
+  "zod-4.5-compiled-validate-separate-normalization",
   "ajv",
   "typebox",
   "typebox-native-transform",
@@ -22,38 +24,61 @@ export async function loadValidatorAdapter(
   envelope: ValidationEnvelope = "production",
 ): Promise<ValidatorAdapter> {
   switch (name) {
-    case "current-zod": {
-      const { currentZodAdapter } = await import("./current-zod");
+    case "zod-4.4-native-transform": {
+      const { zod44NativeTransformAdapter } = await import("./zod-4-4");
       if (envelope === "production") {
-        return currentZodAdapter;
+        return zod44NativeTransformAdapter;
       }
-      const { diagnosticCurrentZodAdapter } = await import("./current-zod");
-      return diagnosticCurrentZodAdapter;
-    }
-    case "compiled-zod": {
-      const { loadCompiledZodAdapter } = await import("./load-compiled-zod");
-      return loadCompiledZodAdapter(
-        resolve("dist/compiled-zod-external/compiled-zod-entry.js"),
-        envelope,
+      const { diagnosticZod44NativeTransformAdapter } = await import(
+        "./zod-4-4"
       );
+      return diagnosticZod44NativeTransformAdapter;
     }
-    case "zod-manual-normalizer": {
+    case "zod-4.4-separate-normalization": {
       const {
-        currentZodManualNormalizerAdapter,
-        diagnosticCurrentZodManualNormalizerAdapter,
+        zod44SeparateNormalizationAdapter,
+        diagnosticZod44SeparateNormalizationAdapter,
+      } = await import("./zod-4-4-manual-normalizer");
+      return envelope === "production"
+        ? zod44SeparateNormalizationAdapter
+        : diagnosticZod44SeparateNormalizationAdapter;
+    }
+    case "zod-4.5-native-transform": {
+      const { zod45NativeTransformAdapter } = await import("./current-zod");
+      if (envelope === "production") {
+        return zod45NativeTransformAdapter;
+      }
+      const { diagnosticZod45NativeTransformAdapter } = await import(
+        "./current-zod"
+      );
+      return diagnosticZod45NativeTransformAdapter;
+    }
+    case "zod-4.5-separate-normalization": {
+      const {
+        zod45SeparateNormalizationAdapter,
+        diagnosticZod45SeparateNormalizationAdapter,
       } = await import("./current-zod-manual-normalizer");
       return envelope === "production"
-        ? currentZodManualNormalizerAdapter
-        : diagnosticCurrentZodManualNormalizerAdapter;
+        ? zod45SeparateNormalizationAdapter
+        : diagnosticZod45SeparateNormalizationAdapter;
     }
-    case "compiled-zod-manual-normalizer": {
-      const { loadCompiledZodManualNormalizerAdapter } = await import(
-        "./load-compiled-zod-manual-normalizer"
+    case "zod-4.5-compiled-native-transform": {
+      const { createNativeCompiledZodAdapter } = await import(
+        "./native-compiled-zod"
       );
-      return loadCompiledZodManualNormalizerAdapter(
-        resolve(
-          "dist/compiled-zod-manual-normalizer/compiled-zod-manual-normalizer-entry.js",
-        ),
+      return createNativeCompiledZodAdapter(envelope);
+    }
+    case "zod-4.5-compiled-separate-normalization": {
+      const {
+        createNativeCompiledZodSeparateNormalizationAdapter,
+      } = await import("./native-compiled-zod-manual-normalizer");
+      return createNativeCompiledZodSeparateNormalizationAdapter(envelope);
+    }
+    case "zod-4.5-compiled-validate-separate-normalization": {
+      const {
+        createNativeCompiledZodValidateSeparateNormalizationAdapter,
+      } = await import("./native-compiled-zod-manual-normalizer");
+      return createNativeCompiledZodValidateSeparateNormalizationAdapter(
         envelope,
       );
     }
